@@ -1,0 +1,636 @@
+<!DOCTYPE html>
+<html lang="es" class="dark">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <title>Protocolo: Un Rinconcito Para Nosotros // Josue & Rubi</title>
+
+  <!-- Google Fonts: Cinzel (Piltover Art Deco), Rajdhani (Hextech UI), Caveat (Personal Letter) -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Caveat:wght@600;700&family=Cinzel:wght@600;700;800;900&family=Rajdhani:wght@500;600;700&family=Plus+Jakarta+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+
+  <!-- Canvas Confetti CDN -->
+  <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          fontFamily: {
+            piltover: ['Cinzel', 'serif'],
+            hextech: ['Rajdhani', 'sans-serif'],
+            letter: ['Caveat', 'cursive'],
+            body: ['Plus Jakarta Sans', 'sans-serif'],
+          },
+          colors: {
+            arcane: {
+              void: '#07080d',
+              dark: '#0c0f17',
+              card: 'rgba(16, 21, 33, 0.75)',
+              gold: '#c69b4c',
+              goldBright: '#f5c366',
+              cyan: '#00f2fe',
+              cyanGlow: '#4facfe',
+              shimmer: '#ec4899',
+              shimmerDeep: '#d946ef',
+              zaunViolet: '#9333ea',
+              runeBorder: 'rgba(198, 155, 76, 0.35)',
+            }
+          }
+        }
+      }
+    }
+  </script>
+
+  <style>
+    :root {
+      --hex-cyan: #00f2fe;
+      --hex-gold: #c69b4c;
+      --hex-shimmer: #ec4899;
+    }
+
+    body {
+      background-color: #07080d;
+      color: #e2e8f0;
+      font-family: 'Plus Jakarta Sans', sans-serif;
+      touch-action: manipulation;
+      -webkit-tap-highlight-color: transparent;
+      overflow-x: hidden;
+      background-image: 
+        radial-gradient(circle at 50% 0%, rgba(0, 242, 254, 0.12) 0%, transparent 60%),
+        radial-gradient(circle at 10% 40%, rgba(217, 70, 239, 0.08) 0%, transparent 45%),
+        radial-gradient(circle at 90% 80%, rgba(198, 155, 76, 0.08) 0%, transparent 50%);
+    }
+
+    /* Piltovan Art Deco / Hextech Beveled Box Corners */
+    .hex-box {
+      position: relative;
+      background: rgba(14, 18, 29, 0.78);
+      backdrop-filter: blur(14px);
+      border: 1px solid rgba(198, 155, 76, 0.32);
+      box-shadow: 0 0 25px rgba(0, 0, 0, 0.6), inset 0 0 15px rgba(0, 242, 254, 0.03);
+      clip-path: polygon(
+        0 14px, 14px 0, 
+        calc(100% - 14px) 0, 100% 14px, 
+        100% calc(100% - 14px), calc(100% - 14px) 100%, 
+        14px 100%, 0 calc(100% - 14px)
+      );
+    }
+
+    .hex-box::before {
+      content: '';
+      position: absolute;
+      top: 0; left: 0; right: 0; height: 1px;
+      background: linear-gradient(90deg, transparent, rgba(0, 242, 254, 0.6), transparent);
+    }
+
+    /* Art Deco Corner Highlights */
+    .deco-corner-tl {
+      position: absolute;
+      top: 3px; left: 3px;
+      width: 8px; height: 8px;
+      border-top: 2px solid var(--hex-gold);
+      border-left: 2px solid var(--hex-gold);
+      pointer-events: none;
+    }
+    .deco-corner-br {
+      position: absolute;
+      bottom: 3px; right: 3px;
+      width: 8px; height: 8px;
+      border-bottom: 2px solid var(--hex-gold);
+      border-right: 2px solid var(--hex-gold);
+      pointer-events: none;
+    }
+
+    /* Ambient Hextech/Zaun float particles */
+    @keyframes floatParticle {
+      0% {
+        transform: translateY(105vh) translateX(0) scale(0.6) rotate(0deg);
+        opacity: 0;
+      }
+      20% { opacity: 0.85; }
+      80% { opacity: 0.85; }
+      100% {
+        transform: translateY(-8vh) translateX(var(--drift, 40px)) scale(1.2) rotate(180deg);
+        opacity: 0;
+      }
+    }
+
+    .shimmer-sparkle {
+      position: absolute;
+      pointer-events: none;
+      animation: floatParticle var(--dur, 10s) linear infinite;
+    }
+
+    /* Hextech Core Rotation & Glow */
+    @keyframes coreSpin {
+      from { transform: rotate(0deg); }
+      to { transform: rotate(360deg); }
+    }
+    @keyframes corePulse {
+      0%, 100% {
+        filter: drop-shadow(0 0 16px rgba(0, 242, 254, 0.7)) drop-shadow(0 0 35px rgba(236, 72, 153, 0.4));
+      }
+      50% {
+        filter: drop-shadow(0 0 26px rgba(0, 242, 254, 0.95)) drop-shadow(0 0 50px rgba(236, 72, 153, 0.7));
+      }
+    }
+
+    .core-ring {
+      animation: coreSpin 24s linear infinite;
+    }
+    .core-glow {
+      animation: corePulse 3.5s ease-in-out infinite;
+    }
+
+    /* Secret Letter Accordion */
+    .letter-portal {
+      max-height: 0;
+      opacity: 0;
+      overflow: hidden;
+      transform: scale(0.97);
+      transition: max-height 0.75s cubic-bezier(0.16, 1, 0.3, 1),
+                  opacity 0.5s ease,
+                  transform 0.5s cubic-bezier(0.16, 1, 0.3, 1),
+                  margin-top 0.4s ease;
+    }
+    .letter-portal.active {
+      max-height: 1200px;
+      opacity: 1;
+      transform: scale(1);
+      margin-top: 1.75rem;
+    }
+
+    /* Custom Checkbox Arcane Styling */
+    .mission-checkbox {
+      appearance: none;
+      width: 22px;
+      height: 22px;
+      border: 1.5px solid var(--hex-gold);
+      background: rgba(10, 14, 23, 0.9);
+      cursor: pointer;
+      display: grid;
+      place-content: center;
+      transition: all 0.25s ease;
+      clip-path: polygon(3px 0, calc(100% - 3px) 0, 100% 3px, 100% calc(100% - 3px), calc(100% - 3px) 100%, 3px 100%, 0 calc(100% - 3px), 0 3px);
+    }
+    .mission-checkbox:checked {
+      background: linear-gradient(135deg, #00f2fe, #d946ef);
+      border-color: #00f2fe;
+      box-shadow: 0 0 12px rgba(0, 242, 254, 0.6);
+    }
+    .mission-checkbox:checked::after {
+      content: '✓';
+      color: #07080d;
+      font-size: 13px;
+      font-weight: 900;
+    }
+    .mission-item.checked .mission-text {
+      text-decoration: line-through;
+      color: #64748b;
+    }
+    .mission-item.checked {
+      border-color: rgba(0, 242, 254, 0.35);
+      background: rgba(0, 242, 254, 0.04);
+    }
+  </style>
+</head>
+
+<body class="relative min-h-screen w-full selection:bg-cyan-500 selection:text-black">
+
+  <!-- Ambient Shimmer & Hextech Spores -->
+  <div id="ambientSparks" class="fixed inset-0 pointer-events-none overflow-hidden z-0" aria-hidden="true"></div>
+
+  <!-- Decorative Runeterra Backdrop Overlay -->
+  <div class="fixed top-0 left-0 right-0 h-40 bg-gradient-to-b from-cyan-950/20 via-transparent to-transparent pointer-events-none z-0"></div>
+
+  <main class="relative z-10 w-full max-w-2xl mx-auto px-4 py-8 sm:py-14">
+
+    <header class="text-center mb-10">
+      
+      <!-- Piltover Badge -->
+      <div class="inline-flex items-center gap-2 px-4 py-1 rounded-sm border border-arcane-gold/60 bg-gradient-to-r from-arcane-dark via-[#141b2a] to-arcane-dark mb-4 shadow-[0_0_15px_rgba(198,155,76,0.25)]">
+        <span class="w-1.5 h-1.5 rotate-45 bg-arcane-cyan shadow-[0_0_8px_#00f2fe]"></span>
+        <span class="font-hextech text-xs tracking-[0.25em] text-arcane-goldBright uppercase font-bold">
+          Mensaje para Jusu
+        </span>
+        <span class="w-1.5 h-1.5 rotate-45 bg-arcane-shimmer shadow-[0_0_8px_#ec4899]"></span>
+      </div>
+
+      <h1 class="font-piltover text-3xl sm:text-5xl font-black text-transparent bg-clip-text bg-gradient-to-b from-amber-100 via-arcane-goldBright to-amber-600 tracking-wider mb-2 drop-shadow-[0_2px_12px_rgba(198,155,76,0.3)]">
+        Un Rinconcito Para Nosotros
+      </h1>
+      
+      <div class="flex items-center justify-center gap-3 my-2">
+        <div class="h-[1px] w-12 bg-gradient-to-r from-transparent to-arcane-gold"></div>
+        <span class="text-xs text-arcane-cyan font-hextech tracking-widest uppercase">Te amuuu</span>
+        <div class="h-[1px] w-12 bg-gradient-to-l from-transparent to-arcane-gold"></div>
+      </div>
+
+      <p class="font-body text-slate-400 text-sm sm:text-base max-w-md mx-auto leading-relaxed mt-3">
+        Espero te guste, eres mi persona segura y amaria verte feliz con los detalles que te hago (si me llamas loca nt). <span class="text-arcane-shimmer font-semibold">Te adoro.</span>
+      </p>
+    </header>
+
+    <section class="mb-12">
+      <div class="hex-box p-6 sm:p-9 relative">
+        <div class="deco-corner-tl"></div>
+        <div class="deco-corner-br"></div>
+
+        <!-- Core Button Activator -->
+        <button 
+          id="coreTriggerBtn" 
+          type="button"
+          class="w-full flex flex-col items-center justify-center group focus:outline-none cursor-pointer"
+          aria-expanded="false"
+        >
+          <!-- Hextech Core Orb -->
+          <div class="relative w-28 h-28 sm:w-32 sm:h-32 mb-4 flex items-center justify-center core-glow">
+            
+            <!-- Outer Runed Ring -->
+            <svg class="absolute inset-0 w-full h-full core-ring opacity-80" viewBox="0 0 100 100">
+              <circle cx="50" cy="50" r="46" fill="none" stroke="#c69b4c" stroke-width="1.5" stroke-dasharray="8 4 2 4" opacity="0.6"/>
+              <circle cx="50" cy="50" r="38" fill="none" stroke="#00f2fe" stroke-width="1" stroke-dasharray="14 8"/>
+              <polygon points="50,6 94,50 50,94 6,50" fill="none" stroke="rgba(236,72,153,0.4)" stroke-width="1" />
+            </svg>
+
+            <!-- Inner Glowing Crystal -->
+            <div class="w-16 h-16 sm:w-20 sm:h-20 rounded-2xl bg-gradient-to-tr from-cyan-600 via-sky-400 to-fuchsia-500 rotate-45 flex items-center justify-center shadow-[0_0_35px_rgba(0,242,254,0.8)] border border-white/50 group-hover:scale-110 transition-transform duration-300">
+              <span class="-rotate-45 text-2xl sm:text-3xl filter drop-shadow">💎</span>
+            </div>
+
+            <!-- Pulsing Shimmer Ring -->
+            <div class="absolute -bottom-1 flex items-center gap-1.5 px-3 py-0.5 rounded-full bg-arcane-void/90 border border-arcane-gold/50 shadow-md">
+              <span class="w-2 h-2 rounded-full bg-arcane-cyan animate-ping"></span>
+              <span class="font-hextech text-[10px] tracking-widest text-arcane-goldBright font-bold">NÚCLEO ACTIVO</span>
+            </div>
+          </div>
+
+          <div class="text-center mt-2">
+            <span class="font-piltover text-base sm:text-lg font-bold text-amber-200 group-hover:text-arcane-cyan transition-colors">
+              TRANSMISIÓN PERSONAL: CARTA DE AMOR
+            </span>
+            <p id="coreStatusText" class="font-hextech text-xs sm:text-sm text-arcane-cyanGlow tracking-wider mt-1">
+              [ PULSA EL NÚCLEO HEXTECH PARA DESENCRIPTAR ]
+            </p>
+          </div>
+        </button>
+
+        <!-- Unsealed Letter Content -->
+        <div id="secretLetter" class="letter-portal">
+          <div class="relative bg-gradient-to-b from-[#121824] via-[#0d121c] to-[#0a0d14] border border-cyan-500/30 rounded-lg p-6 sm:p-8 shadow-[inset_0_0_25px_rgba(0,242,254,0.06)]">
+            
+            <!-- Zaun / Jinx neon spray accent badge -->
+            <div class="flex items-center justify-between border-b border-arcane-gold/20 pb-3 mb-4">
+              <span class="font-hextech text-xs tracking-widest text-arcane-shimmer uppercase font-bold">
+                // MENSAJE DE RUBI PARA JOSUE
+              </span>
+              <span class="font-hextech text-xs text-arcane-gold/70">PRIORIDAD MÁXIMA</span>
+            </div>
+
+            <div class="font-letter text-3xl sm:text-4xl text-arcane-cyan font-bold mb-4 drop-shadow-[0_0_10px_rgba(0,242,254,0.4)]">
+              Para ti, mi bot:
+            </div>
+
+            <div class="space-y-4 font-body text-slate-300 text-sm sm:text-base leading-relaxed">
+              <p>
+                <strong class="text-arcane-goldBright">Josue</strong>, desde que te conocí, te volviste una persona constante en mi vida. Si bien al inicio tampoco esperaba verte de esta manera, ahora cambió la situación.
+              </p>
+              <p>
+                No me arrepiento de decirte lo mucho que te puedo amar. Eres una persona increíble, alguien con quien deseo compartir demasiados recuerdos, que deseo que estés ahí en las buenas y en las malas, en todos los momentos que pueda vivir; y eso de verdad, te lo agradezco mucho corazón.
+              </p>
+              <p>
+                Gracias por escucharme, por cuidarme, por estar ahí junto a mí y por ser mi equipo favorito. Te amo con todo mi corazón, hoy y todos los días que vienen. ✨ 
+              </p>
+                <p>
+                    Se que puede sonar difícil, incluso alocado por la disancia (si es mucha), pero... si avanzamos juntos, podremos superar cualquier obstáculo, aunque sinceramente no te forzare a nada, eres tan especial para mí que cualquier cosa que tú decidas para mí esta bien. (siento que leyendo esto me vas a querer decir rata o bot) te adoro y eso no me lo quitarán facilmente jeje...
+                </p>
+            </div>
+
+            <!-- Signature & Sealed Mark -->
+            <div class="mt-6 pt-4 border-t border-cyan-500/20 flex flex-col items-end">
+              <span class="font-hextech text-xs tracking-widest text-slate-400 uppercase font-semibold">Con amor: Rubi</span>
+              <span class="font-letter text-2xl sm:text-3xl text-arcane-shimmer font-bold mt-1 drop-shadow-[0_0_8px_rgba(236,72,153,0.5)]">
+                Con todo mi cariño ❤️
+              </span>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </section>
+
+    <section class="mb-12">
+      <div class="flex items-center gap-3 mb-6">
+        <span class="text-2xl text-arcane-cyan">⚙️</span>
+        <div>
+          <h2 class="font-piltover text-xl sm:text-2xl font-bold text-amber-200 tracking-wide">
+            Archivos pasados.
+          </h2>
+          <p class="font-hextech text-xs sm:text-sm text-slate-400 tracking-wider">
+            REGISTROS GUARDADOS EN EL CORAZÓN JEJE
+          </p>
+        </div>
+      </div>
+
+      <!-- Timeline Rail -->
+      <div class="relative pl-6 sm:pl-8 space-y-6 before:absolute before:left-2 sm:before:left-3 before:top-3 before:bottom-3 before:w-0.5 before:bg-gradient-to-b before:from-arcane-cyan before:via-arcane-gold before:to-arcane-shimmer">
+
+        <!-- LOG 01: Inicio como bots -->
+        <div class="relative group">
+          <div class="absolute -left-6 sm:-left-8 top-2 w-4 sm:w-5 h-4 sm:h-5 rounded-full bg-arcane-void border-2 border-arcane-cyan flex items-center justify-center shadow-[0_0_10px_#00f2fe]">
+            <span class="w-1.5 h-1.5 rounded-full bg-arcane-cyan"></span>
+          </div>
+
+          <div class="hex-box p-5 border-cyan-500/30 group-hover:border-cyan-400 transition-colors">
+            <span class="font-hextech text-xs font-bold text-arcane-cyan tracking-widest uppercase bg-cyan-950/70 border border-cyan-500/40 px-2.5 py-0.5 rounded-xs">
+              01 // NUESTRO INICIO COMO BOTS
+            </span>
+            <h3 class="font-piltover text-base sm:text-lg font-bold text-white mt-2">
+              Cuando todo comenzó ✨
+            </h3>
+            <p class="font-body text-xs sm:text-sm text-slate-300 mt-2 leading-relaxed">
+              Esa primera conversación en la que las horas se pasaron volando y supe al instante que eras alguien completamente diferente a todos los demás. Sin embargo, en ese momento solo éramos amigos, éramos simples <em>bots</em> en el mundo, pero no me molestaba. Charlar contigo me llenaba de alegría; siendo amigos ya eras sumamente importante para mí. Pasaba todo el tiempo hablando contigo, jugábamos y reíamos. (¡Aún tengo muchos clips antiguos de nosotros jugando!) creeme que esos dias aun los recuerdo tanto como ahora, sin duda volveria a conocerte para seguir la historia que hemos formado poco a poco.
+            </p>
+          </div>
+        </div>
+
+        <!-- LOG 02: El reencuentro -->
+        <div class="relative group">
+          <div class="absolute -left-6 sm:-left-8 top-2 w-4 sm:w-5 h-4 sm:h-5 rounded-full bg-arcane-void border-2 border-arcane-gold flex items-center justify-center shadow-[0_0_10px_#c69b4c]">
+            <span class="w-1.5 h-1.5 rounded-full bg-arcane-goldBright"></span>
+          </div>
+
+          <div class="hex-box p-5 border-arcane-gold/30 group-hover:border-arcane-gold transition-colors">
+            <span class="font-hextech text-xs font-bold text-arcane-goldBright tracking-widest uppercase bg-amber-950/60 border border-arcane-gold/40 px-2.5 py-0.5 rounded-xs">
+              02 // NUESTRO SEGUNDO REENCUENTRO
+            </span>
+            <h3 class="font-piltover text-base sm:text-lg font-bold text-white mt-2">
+              Con muchos nervios, pero feliz de volver a hablarte ☕
+            </h3>
+            <p class="font-body text-xs sm:text-sm text-slate-300 mt-2 leading-relaxed">
+                La segunda vez que volvimos a hablar, fue una mezcla de alivio, miedo y nerviosismo, me tenías confundida ¿y sí solo lo hace por algo en específico? ¿Será que volveremos a ser lo de antes?... esas preguntas me calcomían mientras preguntaba si estaba correcto invitarte a jugar... y a veces me costaba más que otras, hasta que un día me diste una sorpresa, una cosa que no me esperaba, una skin, verdaderamente no era simplemente la skin (no soy interesada JAJAJ) era el hecho que te molestaste y te tomaste el tiempo para darmelo y ahí me pregunté ¿de verdad es para mí? sí bien sabes ese día llore, por el hecho de que me libraste de algunas dudas que tenia en ese entonces, que pudimos hablar con más tranqulidad que otros días y en ese momento pude seguir conociendote sin miedo, viendo por el presente y esperando el futuro con muchos animos de seguir.
+            </p>
+          </div>
+        </div>
+
+        <!-- LOG 03: Canción que me recuerda a ti -->
+        <div class="relative group">
+          <div class="absolute -left-6 sm:-left-8 top-2 w-4 sm:w-5 h-4 sm:h-5 rounded-full bg-arcane-void border-2 border-arcane-shimmer flex items-center justify-center shadow-[0_0_10px_#ec4899]">
+            <span class="w-1.5 h-1.5 rounded-full bg-arcane-shimmer"></span>
+          </div>
+
+          <div class="hex-box p-5 border-pink-500/30 group-hover:border-pink-400 transition-colors">
+            <span class="font-hextech text-xs font-bold text-arcane-shimmer tracking-widest uppercase bg-fuchsia-950/60 border border-pink-500/40 px-2.5 py-0.5 rounded-xs">
+              03 // CONFESARME
+            </span>
+            <h3 class="font-piltover text-base sm:text-lg font-bold text-white mt-2">
+              Eres tú... 🎵
+            </h3>
+            <p class="font-body text-xs sm:text-sm text-slate-300 mt-2 leading-relaxed">
+                Hace tiempo no sentia mi corazón como cuando era niña, el hecho de sentir mi corazón enamorado, el que me lata demasiado rápido y que quería decirtelo pero me daba demasiados nervios, fue un sentimiento extrañamente bonito, el hecho de sentirlo era bonito, porque hace tiempio no sentia eso, como ya te lo dije, fue un impulso de la situación porque no lo había planeado tan bien JAJAJ, es más, no tenía pensado decirtelo... PEROOOO, me alegra que si te lo dije, porque ahora tengo un novio espectacular a mi lado.
+            </p>
+
+            <!-- Decorative Simulated Soundwave Player -->
+            <div class="mt-3 p-3 rounded bg-arcane-void/80 border border-pink-500/20 flex items-center justify-between">
+              <div class="flex items-center gap-3">
+                <span class="text-xl">📻</span>
+                <div>
+                  <div class="text-xs font-hextech font-bold text-arcane-shimmer tracking-wider">TQM</div>
+                  <div class="text-[11px] text-slate-400">Mi lugar especial ✨</div>
+                </div>
+              </div>
+              <div class="flex items-end gap-1 h-5">
+                <span class="w-1 bg-arcane-cyan h-2 animate-pulse"></span>
+                <span class="w-1 bg-arcane-shimmer h-4 animate-bounce"></span>
+                <span class="w-1 bg-arcane-goldBright h-5 animate-pulse"></span>
+                <span class="w-1 bg-arcane-cyan h-3 animate-bounce"></span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </section>
+
+    <section class="mb-12">
+      <div class="hex-box p-6 sm:p-8">
+        <div class="deco-corner-tl"></div>
+        <div class="deco-corner-br"></div>
+
+        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-4 border-b border-arcane-gold/20 pb-3">
+          <div>
+            <h2 class="font-piltover text-xl sm:text-2xl font-bold text-amber-200">
+              Ideas para hacer cosas juntos 🗺️
+            </h2>
+            <p class="font-hextech text-xs sm:text-sm text-slate-400 tracking-wider">
+              MISIONES COOPERATIVAS POR CUMPLIR JUNTOS
+            </p>
+          </div>
+          <div class="flex items-center">
+            <span id="missionsCounter" class="font-hextech text-xs font-bold text-arcane-cyan px-3 py-1 rounded bg-cyan-950/80 border border-cyan-500/40">
+              0 / 5 COMPLETADOS
+            </span>
+          </div>
+        </div>
+
+        <!-- Mission Checklist -->
+        <div class="space-y-3" id="missionsList">
+
+          <label class="mission-item flex items-center gap-3.5 p-3.5 rounded bg-slate-900/60 border border-slate-700/60 hover:border-cyan-400/50 cursor-pointer transition-all duration-200 select-none">
+            <input type="checkbox" class="mission-checkbox">
+            <span class="mission-text font-body text-xs sm:text-sm text-slate-200 flex-1">
+              Hacer algun postre o comida juntos 🍰
+            </span>
+          </label>
+
+          <label class="mission-item flex items-center gap-3.5 p-3.5 rounded bg-slate-900/60 border border-slate-700/60 hover:border-cyan-400/50 cursor-pointer transition-all duration-200 select-none">
+            <input type="checkbox" class="mission-checkbox">
+            <span class="mission-text font-body text-xs sm:text-sm text-slate-200 flex-1">
+              Maratón de películas / Arcane  🍿
+            </span>
+          </label>
+
+          <label class="mission-item flex items-center gap-3.5 p-3.5 rounded bg-slate-900/60 border border-slate-700/60 hover:border-cyan-400/50 cursor-pointer transition-all duration-200 select-none">
+            <input type="checkbox" class="mission-checkbox">
+            <span class="mission-text font-body text-xs sm:text-sm text-slate-200 flex-1">
+              Dibujar cosas en un lienzo compartido 🌅
+            </span>
+          </label>
+
+          <label class="mission-item flex items-center gap-3.5 p-3.5 rounded bg-slate-900/60 border border-slate-700/60 hover:border-cyan-400/50 cursor-pointer transition-all duration-200 select-none">
+            <input type="checkbox" class="mission-checkbox">
+            <span class="mission-text font-body text-xs sm:text-sm text-slate-200 flex-1">
+              Jugar un sin fin de juegos 💨
+            </span>
+          </label>
+
+          <label class="mission-item flex items-center gap-3.5 p-3.5 rounded bg-slate-900/60 border border-slate-700/60 hover:border-cyan-400/50 cursor-pointer transition-all duration-200 select-none">
+            <input type="checkbox" class="mission-checkbox">
+            <span class="mission-text font-body text-xs sm:text-sm text-slate-200 flex-1">
+              Escuchar música compartida ❤️
+            </span>
+          </label>
+
+        </div>
+      </div>
+    </section>
+
+    <footer class="text-center pt-2 pb-14">
+      <button 
+        id="hextechOverloadBtn"
+        type="button"
+        class="relative inline-flex items-center justify-center gap-3 px-8 py-4 rounded-none font-piltover font-bold text-base sm:text-lg text-white bg-gradient-to-r from-cyan-600 via-fuchsia-600 to-amber-600 border border-amber-300 shadow-[0_0_25px_rgba(0,242,254,0.4)] hover:shadow-[0_0_40px_rgba(236,72,153,0.7)] hover:scale-105 active:scale-95 transition-all duration-200 cursor-pointer"
+        style="clip-path: polygon(10px 0, 100% 0, calc(100% - 10px) 100%, 0 100%);"
+      >
+        <span>FELICIDAD PURA</span>
+        <span class="text-xl">⚡</span>
+      </button>
+
+      <p class="font-hextech text-xs tracking-widest text-slate-500 mt-5 uppercase">
+        CONSTRUIDO CON AMOR Y MAGIA (de la buena) // Botelio ✨
+      </p>
+    </footer>
+
+  </main>
+
+  <script>
+    // 1. Generate ambient Hextech Cyan & Zaun Shimmer Spores
+    const sparkContainer = document.getElementById('ambientSparks');
+    const sparkSymbols = ['✦', '◆', '⚡', '✨', '•', '✧'];
+    const totalSparks = window.innerWidth < 640 ? 16 : 28;
+
+    for (let i = 0; i < totalSparks; i++) {
+      const spark = document.createElement('div');
+      spark.className = 'shimmer-sparkle font-mono text-xs select-none';
+      spark.innerText = sparkSymbols[Math.floor(Math.random() * sparkSymbols.length)];
+      
+      // Arcane Colors (Cyan, Gold, Pink Shimmer)
+      const colors = ['#00f2fe', '#ec4899', '#f5c366', '#a855f7'];
+      spark.style.color = colors[Math.floor(Math.random() * colors.length)];
+      spark.style.textShadow = `0 0 8px ${spark.style.color}`;
+      spark.style.left = `${Math.random() * 100}vw`;
+      spark.style.setProperty('--dur', `${Math.random() * 6 + 7}s`);
+      spark.style.setProperty('--drift', `${(Math.random() - 0.5) * 80}px`);
+      spark.style.animationDelay = `${Math.random() * 8}s`;
+      sparkContainer.appendChild(spark);
+    }
+
+    // 2. Unseal Hextech Core Letter
+    const coreTriggerBtn = document.getElementById('coreTriggerBtn');
+    const secretLetter = document.getElementById('secretLetter');
+    const coreStatusText = document.getElementById('coreStatusText');
+    let isCoreUnsealed = false;
+
+    coreTriggerBtn.addEventListener('click', () => {
+      isCoreUnsealed = !isCoreUnsealed;
+
+      if (isCoreUnsealed) {
+        secretLetter.classList.add('active');
+        coreStatusText.innerText = '[ NÚCLEO DESENCRIPTADO // TOCA PARA CERRAR ]';
+        coreStatusText.classList.replace('text-arcane-cyanGlow', 'text-arcane-shimmer');
+        coreTriggerBtn.setAttribute('aria-expanded', 'true');
+
+        // Hextech Spark Confetti Burst
+        confetti({
+          particleCount: 50,
+          spread: 70,
+          origin: { y: 0.35 },
+          colors: ['#00f2fe', '#ec4899', '#f5c366', '#d946ef', '#ffffff']
+        });
+      } else {
+        secretLetter.classList.remove('active');
+        coreStatusText.innerText = '[ PULSA EL NÚCLEO HEXTECH PARA DESENCRIPTAR ]';
+        coreStatusText.classList.replace('text-arcane-shimmer', 'text-arcane-cyanGlow');
+        coreTriggerBtn.setAttribute('aria-expanded', 'false');
+      }
+    });
+
+    // 3. Missions Checklist logic with counter
+    const missionsList = document.getElementById('missionsList');
+    const checkboxes = missionsList.querySelectorAll('.mission-checkbox');
+    const counterEl = document.getElementById('missionsCounter');
+
+    function refreshMissionProgress() {
+      const total = checkboxes.length;
+      let completed = 0;
+
+      checkboxes.forEach(chk => {
+        const item = chk.closest('.mission-item');
+        if (chk.checked) {
+          completed++;
+          item.classList.add('checked');
+        } else {
+          item.classList.remove('checked');
+        }
+      });
+
+      counterEl.innerText = `${completed} / ${total} COMPLETADOS`;
+
+      if (completed === total) {
+        counterEl.innerText = '¡TODAS LAS MISIONES LOGRADAS! 🏆';
+        counterEl.classList.replace('text-arcane-cyan', 'text-arcane-goldBright');
+      } else {
+        counterEl.classList.replace('text-arcane-goldBright', 'text-arcane-cyan');
+      }
+    }
+
+    checkboxes.forEach(box => {
+      box.addEventListener('change', (e) => {
+        refreshMissionProgress();
+        if (e.target.checked) {
+          const rect = e.target.getBoundingClientRect();
+          const x = (rect.left + rect.width / 2) / window.innerWidth;
+          const y = (rect.top + rect.height / 2) / window.innerHeight;
+
+          confetti({
+            particleCount: 20,
+            spread: 45,
+            origin: { x, y },
+            colors: ['#00f2fe', '#f5c366', '#ec4899']
+          });
+        }
+      });
+    });
+
+    // 4. Hextech Overload Finale Fireworks
+    const overloadBtn = document.getElementById('hextechOverloadBtn');
+    overloadBtn.addEventListener('click', () => {
+      const end = Date.now() + 2.5 * 1000;
+      const colors = ['#00f2fe', '#ec4899', '#f5c366', '#7e22ce'];
+
+      (function frame() {
+        confetti({
+          particleCount: 4,
+          angle: 60,
+          spread: 55,
+          origin: { x: 0, y: 0.8 },
+          colors: colors
+        });
+        confetti({
+          particleCount: 4,
+          angle: 120,
+          spread: 55,
+          origin: { x: 1, y: 0.8 },
+          colors: colors
+        });
+
+        if (Date.now() < end) {
+          requestAnimationFrame(frame);
+        }
+      }());
+
+      confetti({
+        particleCount: 90,
+        spread: 100,
+        origin: { y: 0.7 },
+        colors: colors
+      });
+    });
+  </script>
+</body>
+</html>
